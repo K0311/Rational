@@ -1,22 +1,42 @@
-<project>
+<project name="Rational" default="test" basedir=".">
+    <path id="test.classpath">
+        <pathelement location="build/classes"/>
+        <pathelement location="build/test-classes"/>
+        <fileset dir="lib"><include name="*.jar"/></fileset>
+    </path>
     <target name="clean">
         <delete dir="build"/>
+        <delete dir="report"/>
     </target>
-    <target name="compile" depends="clean">
+    <target name="compile">
         <mkdir dir="build/classes"/>
-        <javac srcdir="src" destdir="build/classes">
-            <classpath location="lib/junit-4.13.jar" />
+        <javac srcdir="src/main/java" destdir="build/classes"
+               source="1.8" target="1.8" encoding="UTF-8" includeantruntime="false"/>
+    </target>
+    <target name="compile-test" depends="compile">
+        <mkdir dir="build/test-classes"/>
+        <javac srcdir="src/test/java" destdir="build/test-classes"
+               source="1.8" target="1.8" encoding="UTF-8" includeantruntime="false">
+            <classpath refid="test.classpath"/>
         </javac>
+    </target>
+    <target name="test" depends="compile-test">
+        <mkdir dir="report"/>
+        <junit showoutput="yes" printsummary="yes" fork="true" haltonfailure="true">
+            <classpath refid="test.classpath"/>
+            <test name="RationalTest" todir="report">
+                <formatter type="plain"/>
+                <formatter type="xml"/>
+            </test>
+        </junit>
     </target>
     <target name="jar" depends="compile">
         <mkdir dir="build/jar"/>
         <jar destfile="build/jar/Rational.jar" basedir="build/classes">
-            <manifest>
-                <attribute name="Main-Class" value="Rational"/>
-            </manifest>
+            <manifest><attribute name="Main-Class" value="Rational"/></manifest>
         </jar>
     </target>
     <target name="run" depends="jar">
-        <java jar="build/jar/Rational.jar" fork="true"/>
+        <java jar="build/jar/Rational.jar" fork="true" failonerror="true"/>
     </target>
 </project>
