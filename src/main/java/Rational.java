@@ -1,111 +1,118 @@
-class Rational { 
-    long numerator,denominator; 
+import java.math.BigInteger;
 
-    class Illegal extends Exception { 
-        String reason; 
-        Illegal (String reason) { 
-            this.reason = reason; 
-        } 
+/** A mutable fraction, stored in reduced form with a positive denominator. */
+class Rational {
+    long numerator;
+    long denominator;
+
+    class Illegal extends Exception {
+        private static final long serialVersionUID = 1L;
+        final String reason;
+
+        Illegal(String reason) {
+            super(reason);
+            this.reason = reason;
+        }
     }
 
-    /***
-     * This is a traditional constructor without any parameter
-     */
     Rational() {
-        // to be completed
+        numerator = 0;
+        denominator = 1;
     }
 
-    /***
-     * This is the constructor which receive the values of numerator and denominator
-     * @param numerator the value of the numerator
-     * @param denominator the value of the denominator
-     * @throws Illegal will throw Illegal when wrong inputs are given
-     */
-    Rational(long numerator, long denominator) throws Illegal { 
-        // to be completed
+    Rational(long numerator, long denominator) throws Illegal {
+        if (denominator == 0) {
+            throw new Illegal("Denominator cannot be zero");
+        }
+        this.numerator = numerator;
+        this.denominator = denominator;
+        simplestForm();
     }
 
-    /***
-     * find the simplest form of a Rational number
-     * E.g., 2/4 ==> 1/2, 4/6 ==> 2/3
-     */
-    private void simplestForm() { 
-        long computeGCD; 
-        computeGCD = GCD(Math.abs(numerator), denominator); 
-        numerator /= computeGCD; 
-        denominator /= computeGCD; 
+    private void simplestForm() {
+        setReduced(BigInteger.valueOf(numerator), BigInteger.valueOf(denominator));
     }
 
-    /***
-     * find the greatest common denominator
-     */
-    private long GCD(long a, long b) { 
-        if (a%b ==0) return b; 
-        else return GCD(b,a%b); 
+    /** Reduce before converting to long; reject unrepresentable results explicitly. */
+    private void setReduced(BigInteger n, BigInteger d) {
+        if (d.signum() == 0) {
+            throw new ArithmeticException("Denominator cannot be zero");
+        }
+        if (d.signum() < 0) {
+            n = n.negate();
+            d = d.negate();
+        }
+        BigInteger gcd = n.gcd(d);
+        long reducedNumerator = n.divide(gcd).longValueExact();
+        long reducedDenominator = d.divide(gcd).longValueExact();
+        numerator = reducedNumerator;
+        denominator = reducedDenominator;
     }
 
-    /***
-     * Compute an addition of the current rational number to another given rational number
-     * @param x the rational number to be added to the current rational number
-     */
-    public void add(Rational x) { 
-        numerator = (numerator * x.denominator) + (x.numerator * denominator);
-        denominator = (denominator * x.denominator); 
-        simplestForm(); 
+    public void add(Rational x) {
+        BigInteger a = BigInteger.valueOf(numerator);
+        BigInteger b = BigInteger.valueOf(denominator);
+        BigInteger c = BigInteger.valueOf(x.numerator);
+        BigInteger d = BigInteger.valueOf(x.denominator);
+        setReduced(a.multiply(d).add(c.multiply(b)), b.multiply(d));
     }
 
-    /***
-     * Compute a subtraction of the current rational number to another given rational number
-     * @param x the rational number to be subtracted from the current rational number
-     */
     public void subtract(Rational x) {
-        // to be completed
+        BigInteger a = BigInteger.valueOf(numerator);
+        BigInteger b = BigInteger.valueOf(denominator);
+        BigInteger c = BigInteger.valueOf(x.numerator);
+        BigInteger d = BigInteger.valueOf(x.denominator);
+        setReduced(a.multiply(d).subtract(c.multiply(b)), b.multiply(d));
     }
 
-    /***
-     * Compute a multiplication of the current rational number to another given rational number
-     * @param x the rational number to be multiplied to the current rational number
-     */
-    public void multiply(Rational x) { 
-        // to be completed
+    public void multiply(Rational x) {
+        setReduced(BigInteger.valueOf(numerator).multiply(BigInteger.valueOf(x.numerator)),
+            BigInteger.valueOf(denominator).multiply(BigInteger.valueOf(x.denominator)));
     }
 
-    /***
-     * Compute a division of the current rational number to another given rational number
-     * @param x the rational number to be divided by the current rational number
-     */
     public void divide(Rational x) {
-        // to be completed
+        if (x.numerator == 0) {
+            throw new ArithmeticException("Cannot divide by zero");
+        }
+        setReduced(BigInteger.valueOf(numerator).multiply(BigInteger.valueOf(x.denominator)),
+            BigInteger.valueOf(denominator).multiply(BigInteger.valueOf(x.numerator)));
     }
 
-    /***
-     * Check if the given rational number equals to the current rational number
-     * @param x the rational number to be compared to the current rational number
-     * @return true if the given rational number equals to the current, false otherwise
-     */
+    @Override
     public boolean equals(Object x) {
-        // to be completed
-        return true; // TODO: This needs to be modified.
+        if (this == x) {
+            return true;
+        }
+        if (!(x instanceof Rational)) {
+            return false;
+        }
+        Rational other = (Rational) x;
+        return numerator == other.numerator && denominator == other.denominator;
     }
 
-    /***
-     * Compare the current rational number to the current rational number
-     * @param x the rational number to be compared to the current rational number
-     * @return -1 if the current rational number is less than the given number, 0 if they're equal, 1 if the current
-     * rational number is larger than the given number
-     */
+    @Override
+    public int hashCode() {
+        return 31 * Long.hashCode(numerator) + Long.hashCode(denominator);
+    }
+
     public long compareTo(Object x) {
-        // to be completed
-        return -1; // TODO: this needs to be modified.
+        if (x == null) {
+            throw new NullPointerException("Cannot compare to null");
+        }
+        if (!(x instanceof Rational)) {
+            throw new ClassCastException("Expected a Rational number");
+        }
+        Rational other = (Rational) x;
+        BigInteger left = BigInteger.valueOf(numerator)
+            .multiply(BigInteger.valueOf(other.denominator));
+        BigInteger right = BigInteger.valueOf(other.numerator)
+            .multiply(BigInteger.valueOf(denominator));
+        return left.compareTo(right);
     }
 
-    /***
-     * Give the formatted string of the rational number
-     * @return the string representation of the rational number. For example, "1/2", "3/4".
-     */
-    public String toString() { 
-        // to be completed
-        return ""; // TODO: This needs to be modified.
+    @Override
+    public String toString() {
+        return numerator + "/" + denominator;
     }
 
     public static void main(String[] args) {
